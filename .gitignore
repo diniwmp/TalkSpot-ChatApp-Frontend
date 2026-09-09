@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Expo / Temporary files
+.expo/
+.expo-shared/
+web-build/
+dist/
+
+# IDE & Editor files
+.vscode/
+.idea/
+
+# Environment / Secret variables
+.env
+.env.local
