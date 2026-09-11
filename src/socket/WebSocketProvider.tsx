@@ -1,0 +1,90 @@
+import { createContext, useContext, useEffect, useRef, useState } from "react";
+
+interface WebSocketContextValue {
+  socket: WebSocket | null;
+  isConnected: boolean;
+  userId: number;
+  lastMessage: MessageEvent | null; 
+  sendMessage: (data: any) => void;
+}
+
+const WebSocketContext = createContext<WebSocketContextValue | null>(null);
+
+export const WebSocketProvider: React.FC<{
+  children: React.ReactNode;
+  userId: number;
+}> = ({ children, userId }) => {
+  const [isConnected, setConnected] = useState(false);
+  const [lastMessage, setLastMessage] = useState<MessageEvent | null>(null);
+  const socketRef = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    if (
+      userId === 0 ||
+      (socketRef.current &&
+        socketRef.current.readyState === WebSocket.OPEN)
+    ) {
+      return;
+    }
+
+    const socket = new WebSocket(
+      `wss://${process.env.EXPO_PUBLIC_WS_URL}/TalkSpot/chat?userId=${userId}`
+    );
+
+    socketRef.current = socket;
+
+    socket.onopen = () => {
+      console.log(new Date().toLocaleTimeString());
+      console.log("WebSocket Connected...");
+      setConnected(true);
+    };
+
+    socket.onmessage = (event) => {
+      setLastMessage(event);
+    };
+
+    socket.onclose = () => {
+      console.log(new Date().toLocaleTimeString());
+      console.log("WebSocket Disconnected...");
+      setConnected(false);
+    };
+
+    socket.onerror = (error) => {
+      console.log("WebSocket error:", error);
+      setConnected(false);
+    };
+
+    return () => {
+      socket.close();
+    };
+  }, [userId]);
+
+  const sendMessage = (data: any) => {
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify({ ...data, userId }));
+    }
+  };
+
+  return (
+    <WebSocketContext.Provider
+      value={{
+        socket: socketRef.current,
+        isConnected,
+        userId,
+        lastMessage, 
+        sendMessage,
+      }}
+    >
+      {children}
+    </WebSocketContext.Provider>
+  );
+};
+
+export const useWebSocket = () => {
+  const ctx = useContext(WebSocketContext);
+  if (!ctx) {
+    throw new Error("useWebSocket must be used inside WebSocketProvider");
+  }
+
+  return ctx;
+};
