@@ -171,7 +171,6 @@ export default function NewContactScreen() {
           </View>
         </View>
 
-        {/* Save Button */}
         <Pressable
           className="bg-purple-700 h-14 rounded-full items-center justify-center"
           onPress={() => {
